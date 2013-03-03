@@ -1,8 +1,11 @@
 <?php
 
+/* module_magicball, magic 8 ball */
+
 $answers = array();
 
 function magicball_init() {
+	/* answers were shamelessly copied from wikipedia */
 	global $answers;
 	$answers[] = 'It is certain';
 	$answers[] = 'It is decidedly so';

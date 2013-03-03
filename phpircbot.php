@@ -3,7 +3,7 @@
 /* general settings */
 define('IRC_HOST', 'irc.quakenet.org');
 define('IRC_PORT', '6667');
-define('IRC_CHANNEL', '#uadachannel');
+define('IRC_CHANNEL', '#mychannel');
 define('IRC_NICK', 'james^bot');
 
 /* admin users (comma-separated) */

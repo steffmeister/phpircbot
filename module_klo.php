@@ -1,5 +1,7 @@
 <?php
 
+/* module_klo, a klo geh vs meetings counter */
+
 $klo_counter = 0;
 $mtg_counter = 0;
 
