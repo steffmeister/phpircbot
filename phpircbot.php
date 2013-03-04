@@ -1,24 +1,5 @@
 <?php
-
-/* general settings */
-define('IRC_HOST', 'irc.quakenet.org');
-define('IRC_PORT', '6667');
-define('IRC_CHANNEL', '#mychannel');
-define('IRC_NICK', 'james^bot');
-
-/* admin users (comma-separated) */
-$admin_users = 'steffmeister';
-
-/* auto load modules (comma-separated) */
-$autoload = 'klo,magicball';
-
-
-
-/* === nothing to be changed by the user below here... === */
-
-/* internal constants */
-define('IRCBOT_VERSION', '0.1');
-
+require_once('config.php');
 /* convert admin users to array */
 $admin_users = explode(',', $admin_users);
 
@@ -92,7 +73,7 @@ while((!feof($res)) && ($quit == 0)) {
 }
 
 /* quit message */
-irc_send(':'.IRC_NICK.' QUIT :gotta go, fight club');
+irc_send(':'.IRC_NICK.' QUIT :I have to go, my planet needs me!');
 
 /* close connection */
 fclose($res);
@@ -100,6 +81,7 @@ fclose($res);
 /* interpret irc messages */
 function interpret_irc_message($sender, $msg, $private=0) {
 	global $quit;
+	global $modules;
 	$cmd = $msg;
 	$params = '';
 	if (strpos($msg, ' ') !== false) {
