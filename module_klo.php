@@ -6,11 +6,13 @@ $klo_counter = 0;
 $mtg_counter = 0;
 
 function klo_init() {
+	echo "\ninit klo_module";
 	klo_reset_counter();
 	klo_listen();
 }
 
 function klo_reset_counter() {
+	echo "\nreset klo and meeting counters";
 	global $klo_counter;
 	global $mtg_counter;
 	$klo_counter = 0;
@@ -20,6 +22,16 @@ function klo_reset_counter() {
 function klo_command($string, $target='', $private=0) {
 	global $klo_counter;
 	global $mtg_counter;
+
+	$usage = array(
+		"#Commands:",
+		"reset 	- reset the counters",
+		"show 		- show the current stats",
+		"klo+1,k++ - increase klo count",
+		"mtg+1,m++ - increase meeting count",
+		"help 		- show this message",
+		);
+		
 	echo "klo_command($string)\n";
 	switch($string) {
 		case 'reset':
@@ -39,27 +51,18 @@ function klo_command($string, $target='', $private=0) {
 			$mtg_counter++;
 			irc_send_message("Klo ".$klo_counter." : ".$mtg_counter." Meetings", $target, $private);
 			break;
+		case 'help':		
+		case 'man':	
+		default:
+			foreach ($usage as $key => $value) {
+				irc_send_message($value, $target, $private);
+			}
+			
 	}
 }
 
 function klo_listen(){
-	$line = trim(fgets($res));
-
-	if (strpos($line, ' PRIVMSG '.IRC_CHANNEL.' ') !== false) {
-		echo "Received message...\n";
-		$sender = substr($line, 1, strpos($line, '!')-1);
-		echo "From: ".$sender."\n";
-		$msg = substr($line, strpos($line, ':', 2)+1);
-		echo "Message: ".$msg."\n";
-		if (strpos($msg, IRC_NICK) !== false) {
-			echo "I was mentioned\n";
-			if (substr($msg, 0, strlen(IRC_NICK)) == IRC_NICK) {
-				$msg = substr($msg, strpos($msg, ' ') + 1);
-				echo $msg;
-				#interpret_irc_message($sender, $msg, 0);
-			}
-		}
-	}
+	
 }
 
 ?>
