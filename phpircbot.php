@@ -1,101 +1,143 @@
 <?php
 
-/* general settings */
-define('IRC_HOST', 'irc.quakenet.org');
-define('IRC_PORT', '6667');
-define('IRC_CHANNEL', '#mychannel');
-define('IRC_NICK', 'james^bot');
-
-/* admin users (comma-separated) */
-$admin_users = 'steffmeister';
-
-/* auto load modules (comma-separated) */
-$autoload = 'klo,magicball';
-
-
+/* load phpircbot.conf.php */
+require('phpircbot.conf.php');
 
 /* === nothing to be changed by the user below here... === */
 
 /* internal constants */
 define('IRCBOT_VERSION', '0.1');
+define('USER_SHUTDOWN', '1');
+define('CONNECTION_LOST', '2');
 
 /* convert admin users to array */
-$admin_users = explode(',', $admin_users);
+$admin_users = explode(',', IRC_ADMIN_USERS);
 
 /* global modules array, contains loaded modules */
 $modules = array();
 
 /* auto load modules */
-$autoload_modules = explode(',', $autoload);
+$autoload_modules = explode(',', AUTOLOAD_MODULES);
 if (count($autoload_modules) > 0) {
 	foreach($autoload_modules as $module_to_load) {
 		load_module($module_to_load, '', 1);
 	}
 }
 
-/* connect to irc host */
-echo 'Connecting...';
-$res = fsockopen(IRC_HOST, IRC_PORT);
-if ($res == false) {
-	echo "error\n";
-	die();
-}
-echo "ok\n";
+$irc_res = false;
 
-/* main loop, interpret data sent from irc host */
-$quit = 0;
-$nicked = 0;
-$joined = 0;
-while((!feof($res)) && ($quit == 0)) {
-	$line = trim(fgets($res));
-	echo $line."\n";
+
+$connection_failure = 0;
+
+$main_quit = 0;
+while(!$main_quit) {
+	/* main loop, interpret data sent from irc host */
+
+	$irc_res = irc_host_connect();
 	
-	/* send our nick */
-	if (($line == 'NOTICE AUTH :*** No ident response') && (!$nicked)) {
-		echo 'Sending nick...';
-		irc_send('NICK '.IRC_NICK);
-		irc_send('USER '.IRC_NICK.' 0 * :phpircbot '.IRCBOT_VERSION);
-		echo "ok\n";
-		$nicked = 1;
-	/* at the end of motd message, join the channel */
-	} else if ((strpos($line, ' 376 ') !== false) && (!$joined)) {
-		echo 'Joining channel...';
-		irc_send(':'.IRC_NICK.' JOIN '.IRC_CHANNEL);
-		echo "ok\n";
-		$joined = 1;
-	/* ping - pong, kind of keepalive stuff */
-	} else if (substr($line, 0, 4) == 'PING') {
-		irc_send(str_replace('PING', 'PONG', $line));
-	/* message interpretation */
-	} else if (strpos($line, ' PRIVMSG '.IRC_NICK.' ') !== false) {
-		echo "Received private message...\n";
-		$sender = substr($line, 1, strpos($line, '!')-1);
-		echo "From: ".$sender."\n";
-		$msg = substr($line, strpos($line, ':', 2)+1);
-		echo "Message: ".$msg."\n";		
-		interpret_irc_message($sender, $msg, 1);
-	/* general messages */
-	} else if (strpos($line, ' PRIVMSG '.IRC_CHANNEL.' ') !== false) {
-		echo "Received message...\n";
-		$sender = substr($line, 1, strpos($line, '!')-1);
-		echo "From: ".$sender."\n";
-		$msg = substr($line, strpos($line, ':', 2)+1);
-		echo "Message: ".$msg."\n";
-		if (strpos($msg, IRC_NICK) !== false) {
-			echo "I was mentioned\n";
-			if (substr($msg, 0, strlen(IRC_NICK)) == IRC_NICK) {
-				$msg = substr($msg, strpos($msg, ' ') + 1);
-				interpret_irc_message($sender, $msg, 0);
+	if ($irc_res == false) {
+		echo "Connection failure...\n";
+		$connection_failure++;
+		if ($connection_failure > IRC_HOST_RECONNECT) $main_quit = 1;
+		sleep(5000);
+	} else {
+		echo "Connection established...\n";
+		$connection_failure = 0;
+		$quit = 0;
+		$nicked = 0;
+		$joined = 0;
+		while(!$quit) {
+			$line = trim(fgets($irc_res));
+			echo $line."\n";
+	
+			/* send our nick */
+			if (($line == 'NOTICE AUTH :*** No ident response') && (!$nicked)) {
+				echo 'Sending nick...';
+				irc_send('NICK '.IRC_NICK);
+				irc_send('USER '.IRC_NICK.' 0 * :phpircbot '.IRCBOT_VERSION);
+				echo "ok\n";
+				$nicked = 1;
+			/* at the end of motd message, join the channel */
+			} else if ((strpos($line, ' 376 ') !== false) && (!$joined)) {
+				irc_join_channel(IRC_CHANNEL);
+			/* ping - pong, kind of keepalive stuff */
+			} else if (substr($line, 0, 4) == 'PING') {
+				irc_send(str_replace('PING', 'PONG', $line));
+			/* message interpretation */
+			} else if (strpos($line, ' PRIVMSG '.IRC_NICK.' ') !== false) {
+				echo "Received private message...\n";
+				$sender = substr($line, 1, strpos($line, '!')-1);
+				echo "From: ".$sender."\n";
+				$msg = substr($line, strpos($line, ':', 2)+1);
+				echo "Message: ".$msg."\n";		
+				interpret_irc_message($sender, $msg, 1);
+			/* general messages */
+			} else if (strpos($line, ' PRIVMSG '.IRC_CHANNEL.' ') !== false) {
+				echo "Received message...\n";
+				$sender = substr($line, 1, strpos($line, '!')-1);
+				echo "From: ".$sender."\n";
+				$msg = substr($line, strpos($line, ':', 2)+1);
+				echo "Message: ".$msg."\n";
+				if (strpos($msg, IRC_NICK) !== false) {
+					echo "I was mentioned\n";
+					if (substr($msg, 0, strlen(IRC_NICK)) == IRC_NICK) {
+						$msg = substr($msg, strpos($msg, ' ') + 1);
+						interpret_irc_message($sender, $msg, 0);
+					}
+				}
+			/* kick message */
+			} else if (strpos($line, ' KICK '.IRC_CHANNEL.' '.IRC_NICK) !== false) {
+				// we were kicked :(
+				sleep(5000);
+				irc_join_channel(IRC_CHANNEL); // rejoin
 			}
+	
+			if (!feof($irc_res)) $quit = CONNECTION_LOST;
 		}
+		
+		/* check what to do now... */
+		switch(!$quit) {
+			/* if we were forced to shutdown */
+			case USER_SHUTDOWN: $master_quit = 1; break;
+			/* connection lost */
+			case CONNECTION_LOST:
+			default:
+				sleep(5000);
+				echo "what next?\n";
+			break;
+		}
+		/* quit message */
+		irc_send(':'.IRC_NICK.' QUIT :gotta go, fight club');
+
+		/* close connection */
+		fclose($irc_res);
 	}
+	
 }
 
-/* quit message */
-irc_send(':'.IRC_NICK.' QUIT :gotta go, fight club');
+/* connect to irc host */
+function irc_host_connect() {
+	//global $res;
+	/* connect to irc host */
+	echo 'Connecting...';
+	$res = fsockopen(IRC_HOST, IRC_PORT);
+	if ($res == false) {
+		echo "error\n";
+		//die();
+		return false;
+	}
+	echo "ok\n";
+	return $res;
+}
 
-/* close connection */
-fclose($res);
+/* join channel */
+function irc_join_channel($channel) {
+	global $joined;
+	echo 'Joining channel...';
+	irc_send(':'.IRC_NICK.' JOIN '.$channel);
+	echo "ok\n";
+	$joined = 1;
+}
 
 /* interpret irc messages */
 function interpret_irc_message($sender, $msg, $private=0) {
@@ -126,7 +168,7 @@ function interpret_irc_message($sender, $msg, $private=0) {
 			break;
 		/* shutdown bot */
 		case 'shutdown':
-			if (is_admin($sender)) $quit = 1;
+			if (is_admin($sender)) $quit = USER_SHUTDOWN;
 			break;
 		/* load module */
 		case 'load':
@@ -158,17 +200,17 @@ function default_command($cmd, $params, $target = '', $private) {
 
 /* send message to irc host */
 function irc_send($string) {
-	global $res;
-	fwrite($res, $string."\n");
+	global $irc_res;
+	fwrite($irc_res, $string."\n");
 }
 
 /* send (chat) message to irc */
 function irc_send_message($string, $target='', $private=1) {
-	global $res;
+	global $irc_res;
 	if (($target == '') || (!$private)) $target = IRC_CHANNEL;
 	if ($private && ($target == '')) $target = IRC_CHANNEL;
 	$send = ':'.IRC_NICK.' PRIVMSG '.$target.' :'.$string."\n";
-	fwrite($res, $send);
+	fwrite($irc_res, $send);
 }
 
 /* load a module */
