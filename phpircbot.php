@@ -46,15 +46,17 @@ while(!$main_quit) {
 		$quit = 0;
 		$nicked = 0;
 		$joined = 0;
-		while(!$quit) {
+		while(!$quit) {			
 			$line = trim(fgets($irc_res));
-			echo $line."\n";
+			echo 'IRC: '.$line."\n";
 	
-			/* send our nick */
-			if (($line == 'NOTICE AUTH :*** No ident response') && (!$nicked)) {
+			/* send our nick */			
+			#old $line == 'NOTICE AUTH :*** No ident response'
+			if ((preg_match ( "/(NOTICE AUTH).*(hostname)/i" , $line) == 1) && (!$nicked)) {
 				echo 'Sending nick...';
-				irc_send('NICK '.IRC_NICK);
 				irc_send('USER '.IRC_NICK.' 0 * :phpircbot '.IRCBOT_VERSION);
+				irc_send('NICK '.IRC_NICK);
+				
 				echo "ok\n";
 				$nicked = 1;
 			/* at the end of motd message, join the channel */
@@ -91,8 +93,9 @@ while(!$main_quit) {
 				sleep(5000);
 				irc_join_channel(IRC_CHANNEL); // rejoin
 			}
-	
-			if (!feof($irc_res)) $quit = CONNECTION_LOST;
+			
+			if (feof($irc_res)) $quit = CONNECTION_LOST;
+		
 		}
 		
 		/* check what to do now... */
