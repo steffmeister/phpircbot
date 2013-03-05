@@ -27,38 +27,63 @@ if (count($autoload_modules) > 0) {
 $irc_res = false;
 
 
+
 $connection_failure = 0;
 
 $main_quit = 0;
 while(!$main_quit) {
 	/* main loop, interpret data sent from irc host */
 
+	$nick = IRC_NICK;
+	
 	$irc_res = irc_host_connect();
 	
 	if ($irc_res == false) {
 		echo "Connection failure...\n";
 		$connection_failure++;
 		if ($connection_failure > IRC_HOST_RECONNECT) $main_quit = 1;
-		sleep(5000);
+		sleep(60);
 	} else {
 		echo "Connection established...\n";
 		$connection_failure = 0;
 		$quit = 0;
 		$nicked = 0;
 		$joined = 0;
+		$line_empty = 0;
 		while(!$quit) {			
 			$line = trim(fgets($irc_res));
+			
+			$meta_data = stream_get_meta_data($irc_res);
+			
+			if ($meta_data['timed_out'] || $meta_data['eof']) {
+				$quit = 1;
+			}
+			
 			echo 'IRC: '.$line."\n";
+			
+			if ($line == '') {
+				$line_empty++;
+			} else {
+				$line_empty = 0;
+			}
+			
+			if ($line_empty > 50) $quit = 1;
 	
 			/* send our nick */			
 			#old $line == 'NOTICE AUTH :*** No ident response'
 			if ((preg_match ( "/(NOTICE AUTH).*(hostname)/i" , $line) == 1) && (!$nicked)) {
 				echo 'Sending nick...';
-				irc_send('USER '.IRC_NICK.' 0 * :phpircbot '.IRCBOT_VERSION);
-				irc_send('NICK '.IRC_NICK);
+				irc_send('USER '.$nick.' 0 * :phpircbot '.IRCBOT_VERSION);
+				irc_send('NICK '.$nick);
 				
 				echo "ok\n";
 				$nicked = 1;
+			/* nick already in use */
+			} else if (($nicked) && (strpos($line, ' 433 ') !== false)) {
+				echo "Nick already in use :(\n";
+				echo "what now?!?!\n";
+				$nick = $nick.'_';
+				irc_send('NICK '.$nick);
 			/* at the end of motd message, join the channel */
 			} else if ((strpos($line, ' 376 ') !== false) && (!$joined)) {
 				irc_join_channel(IRC_CHANNEL);
@@ -66,7 +91,7 @@ while(!$main_quit) {
 			} else if (substr($line, 0, 4) == 'PING') {
 				irc_send(str_replace('PING', 'PONG', $line));
 			/* message interpretation */
-			} else if (strpos($line, ' PRIVMSG '.IRC_NICK.' ') !== false) {
+			} else if (strpos($line, ' PRIVMSG '.$nick.' ') !== false) {
 				echo "Received private message...\n";
 				$sender = substr($line, 1, strpos($line, '!')-1);
 				echo "From: ".$sender."\n";
@@ -80,21 +105,25 @@ while(!$main_quit) {
 				echo "From: ".$sender."\n";
 				$msg = substr($line, strpos($line, ':', 2)+1);
 				echo "Message: ".$msg."\n";
-				if (strpos($msg, IRC_NICK) !== false) {
+				if (strpos($msg, $nick) !== false) {
 					echo "I was mentioned\n";
-					if (substr($msg, 0, strlen(IRC_NICK)) == IRC_NICK) {
+					if (substr($msg, 0, strlen($nick)) == $nick) {
 						$msg = substr($msg, strpos($msg, ' ') + 1);
 						interpret_irc_message($sender, $msg, 0);
 					}
 				}
 			/* kick message */
-			} else if (strpos($line, ' KICK '.IRC_CHANNEL.' '.IRC_NICK) !== false) {
+			} else if (strpos($line, ' KICK '.IRC_CHANNEL.' '.$nick) !== false) {
 				// we were kicked :(
-				sleep(5000);
+				echo "were kicked\n";
+				$joined = 0;
+				sleep(10);
+				echo "rejoining\n";
 				irc_join_channel(IRC_CHANNEL); // rejoin
 			}
 			
-			if (feof($irc_res)) $quit = CONNECTION_LOST;
+			//if (feof($irc_res)) $quit = CONNECTION_LOST;
+			
 		
 		}
 		
@@ -105,7 +134,7 @@ while(!$main_quit) {
 			/* connection lost */
 			case CONNECTION_LOST:
 			default:
-				sleep(5000);
+				sleep(60);
 				echo "what next?\n";
 			break;
 		}
@@ -136,8 +165,9 @@ function irc_host_connect() {
 /* join channel */
 function irc_join_channel($channel) {
 	global $joined;
+	global $nick;
 	echo 'Joining channel...';
-	irc_send(':'.IRC_NICK.' JOIN '.$channel);
+	irc_send(':'.$nick.' JOIN '.$channel);
 	echo "ok\n";
 	$joined = 1;
 }
@@ -210,9 +240,10 @@ function irc_send($string) {
 /* send (chat) message to irc */
 function irc_send_message($string, $target='', $private=1) {
 	global $irc_res;
+	global $nick;
 	if (($target == '') || (!$private)) $target = IRC_CHANNEL;
 	if ($private && ($target == '')) $target = IRC_CHANNEL;
-	$send = ':'.IRC_NICK.' PRIVMSG '.$target.' :'.$string."\n";
+	$send = ':'.$nick.' PRIVMSG '.$target.' :'.$string."\n";
 	fwrite($irc_res, $send);
 }
 
