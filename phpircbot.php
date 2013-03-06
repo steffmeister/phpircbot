@@ -46,13 +46,18 @@ while(!$main_quit) {
 		$nicked = 0;
 		$joined = 0;
 		$line_empty = 0;
+		$timeouts = 0;
 		while(!$quit) {			
 			$line = trim(fgets($irc_res));
 			
 			$meta_data = stream_get_meta_data($irc_res);
 
 			if ($meta_data['timed_out']) {
-				echo "TIMEOUT\n";				
+				echo "TIMEOUT\n";
+				$timeouts++;
+				echo "Timeouts: $timeouts\n";				
+			} else {
+				$timeouts = 0;
 			}
 			
 			if ( $meta_data['eof']){
@@ -62,17 +67,10 @@ while(!$main_quit) {
 
 			echo 'IRC: '.$line."\n";
 			
-			if ($line == '') {
-				$line_empty++;
-				echo "Empty lines: $line_empty\n";
-			} else {
-				$line_empty = 0;
-			}
-			
-	//		if ($line_empty > 50) $quit = 1;
+			/* after 10 timeouts we reconnect */
+			if ($timeouts > 10) $quit = 1;
 	
-			/* send our nick */			
-			#old $line == 'NOTICE AUTH :*** No ident response'
+			/* send our nick */
 			if ((preg_match ( "/(NOTICE AUTH).*(hostname)/i" , $line) == 1) && (!$nicked)) {
 				echo 'Sending nick...';
 				irc_send('USER '.$nick.' 0 * :phpircbot '.IRCBOT_VERSION);
@@ -130,7 +128,7 @@ while(!$main_quit) {
 		/* check what to do now... */
 		switch($quit) {
 			/* if we were forced to shutdown */
-			case USER_SHUTDOWN: $master_quit = 1; break;
+			case USER_SHUTDOWN: $main_quit = 1; break;
 			/* connection lost */
 			case CONNECTION_LOST:
 			default:
@@ -154,6 +152,7 @@ function irc_host_connect() {
 	/* connect to irc host */
 	echo 'Connecting...';
 	$res = fsockopen(IRC_HOST, IRC_PORT);
+	
 	if ($res == false) {
 		echo "error\n";
 		//die();
@@ -176,6 +175,7 @@ function irc_join_channel($channel) {
 /* interpret irc messages */
 function interpret_irc_message($sender, $msg, $private=0) {
 	global $quit;
+	global $nick;
 	$cmd = $msg;
 	$params = '';
 	if (strpos($msg, ' ') !== false) {
@@ -203,6 +203,14 @@ function interpret_irc_message($sender, $msg, $private=0) {
 		/* shutdown bot */
 		case 'shutdown':
 			if (is_admin($sender)) $quit = USER_SHUTDOWN;
+			break;
+		/* rename bot */
+		case 'nick':
+			if (is_admin($sender)) {
+				echo 'new nick: '.$params."\n";
+				$nick = $params;
+				irc_send('NICK '.$nick);
+			}
 			break;
 		/* load module */
 		case 'load':
