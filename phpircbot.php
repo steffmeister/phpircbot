@@ -3,8 +3,6 @@
 /* load phpircbot.conf.php */
 require('phpircbot.conf.php');
 
-/* === nothing to be changed by the user below here... === */
-
 /* internal constants */
 define('IRCBOT_VERSION', '0.1');
 define('USER_SHUTDOWN', '1');
@@ -25,8 +23,6 @@ if (count($autoload_modules) > 0) {
 }
 
 $irc_res = false;
-
-
 
 $connection_failure = 0;
 
@@ -54,20 +50,26 @@ while(!$main_quit) {
 			$line = trim(fgets($irc_res));
 			
 			$meta_data = stream_get_meta_data($irc_res);
-			
-			if ($meta_data['timed_out'] || $meta_data['eof']) {
-				$quit = 1;
+
+			if ($meta_data['timed_out']) {
+				echo "TIMEOUT\n";				
 			}
 			
+			if ( $meta_data['eof']){
+				echo "EOF\n";
+				$quit = 1;
+			}
+
 			echo 'IRC: '.$line."\n";
 			
 			if ($line == '') {
 				$line_empty++;
+				echo "Empty lines: $line_empty\n";
 			} else {
 				$line_empty = 0;
 			}
 			
-			if ($line_empty > 50) $quit = 1;
+	//		if ($line_empty > 50) $quit = 1;
 	
 			/* send our nick */			
 			#old $line == 'NOTICE AUTH :*** No ident response'
@@ -86,7 +88,7 @@ while(!$main_quit) {
 				irc_send('NICK '.$nick);
 			/* at the end of motd message, join the channel */
 			} else if ((strpos($line, ' 376 ') !== false) && (!$joined)) {
-				irc_join_channel(IRC_CHANNEL);
+				irc_join_channel(IRC_CHANNEL);				
 			/* ping - pong, kind of keepalive stuff */
 			} else if (substr($line, 0, 4) == 'PING') {
 				irc_send(str_replace('PING', 'PONG', $line));
@@ -122,20 +124,19 @@ while(!$main_quit) {
 				irc_join_channel(IRC_CHANNEL); // rejoin
 			}
 			
-			//if (feof($irc_res)) $quit = CONNECTION_LOST;
-			
-		
+			//if (feof($irc_res)) $quit = CONNECTION_LOST;			
 		}
 		
 		/* check what to do now... */
-		switch(!$quit) {
+		switch($quit) {
 			/* if we were forced to shutdown */
 			case USER_SHUTDOWN: $master_quit = 1; break;
 			/* connection lost */
 			case CONNECTION_LOST:
 			default:
 				sleep(60);
-				echo "what next?\n";
+				echo "\nQUIT:$quit";
+				echo "\nwhat next?\n";
 			break;
 		}
 		/* quit message */
