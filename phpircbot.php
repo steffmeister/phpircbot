@@ -45,7 +45,6 @@ while(!$main_quit) {
 		$quit = 0;
 		$nicked = 0;
 		$joined = 0;
-		$line_empty = 0;
 		$timeouts = 0;
 		while(!$quit) {			
 			$line = trim(fgets($irc_res));
@@ -105,6 +104,7 @@ while(!$main_quit) {
 				echo "From: ".$sender."\n";
 				$msg = substr($line, strpos($line, ':', 2)+1);
 				echo "Message: ".$msg."\n";
+				echo "My nick is: ".$nick."\n";
 				if (strpos($msg, $nick) !== false) {
 					echo "I was mentioned\n";
 					if (substr($msg, 0, strlen($nick)) == $nick) {
