@@ -13,7 +13,7 @@ define('IRC_HOST_RECONNECT', 5);
 define('IRC_ADMIN_USERS', 'steffmeister');
 
 /* auto load modules (comma-separated) */
-define('AUTOLOAD_MODULES', 'klo,magicball');
+define('AUTOLOAD_MODULES', 'klo,magicball,numbergame');
 
 
 ?>

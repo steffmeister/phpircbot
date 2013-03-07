@@ -194,6 +194,7 @@ function interpret_irc_message($sender, $msg, $private=0) {
 	global $quit;
 	global $nick;
 	global $commands;
+	global $modules;
 	$cmd = $msg;
 	$params = '';
 	if (strpos($msg, ' ') !== false) {
