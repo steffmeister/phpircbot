@@ -22,6 +22,13 @@ if (count($autoload_modules) > 0) {
 	}
 }
 
+/* registered commands */
+$commands = array();
+
+/* listener */
+$msg_listener_global = array();
+$msg_listener_private = array();
+
 $irc_res = false;
 
 $connection_failure = 0;
@@ -96,7 +103,11 @@ while(!$main_quit) {
 				echo "From: ".$sender."\n";
 				$msg = substr($line, strpos($line, ':', 2)+1);
 				echo "Message: ".$msg."\n";		
-				interpret_irc_message($sender, $msg, 1);
+				if (interpret_irc_message($sender, $msg, 1) == false) {
+					foreach($msg_listener_private as $function) {
+						call_user_func($function, $sender, $msg);
+					}
+				}
 			/* general messages */
 			} else if (strpos($line, ' PRIVMSG '.IRC_CHANNEL.' ') !== false) {
 				echo "Received message...\n";
@@ -105,11 +116,17 @@ while(!$main_quit) {
 				$msg = substr($line, strpos($line, ':', 2)+1);
 				echo "Message: ".$msg."\n";
 				echo "My nick is: ".$nick."\n";
+				$result = false;
 				if (strpos($msg, $nick) !== false) {
 					echo "I was mentioned\n";
 					if (substr($msg, 0, strlen($nick)) == $nick) {
 						$msg = substr($msg, strpos($msg, ' ') + 1);
-						interpret_irc_message($sender, $msg, 0);
+						$result = interpret_irc_message($sender, $msg, 0);
+					}
+				}
+				if ($result == false) {
+					foreach($msg_listener_global as $function) {
+						call_user_func($function, $sender, $msg);
 					}
 				}
 			/* kick message */
@@ -176,6 +193,7 @@ function irc_join_channel($channel) {
 function interpret_irc_message($sender, $msg, $private=0) {
 	global $quit;
 	global $nick;
+	global $commands;
 	$cmd = $msg;
 	$params = '';
 	if (strpos($msg, ' ') !== false) {
@@ -198,6 +216,19 @@ function interpret_irc_message($sender, $msg, $private=0) {
 				irc_send_message('Geladene Module: '.$txt, $sender, $private);
 			} else {
 				irc_send_message('Keine Module geladen.', $sender, $private);
+			}
+			break;
+		/* show registered commands */
+		case 'commands':
+			if (count($commands) > 0) {
+				$txt = '';
+				foreach($commands as $registered=>$func) {
+					if ($txt != '') $txt .= ', ';
+					$txt .= $registered;
+				}
+				irc_send_message('Registrierte Befehle: '.$txt, $sender, $private);
+			} else {
+				irc_send_message('Keine registrierten Befehle.', $sender, $private);
 			}
 			break;
 		/* shutdown bot */
@@ -223,21 +254,49 @@ function interpret_irc_message($sender, $msg, $private=0) {
 		/* else (module commands) */
 		default:
 			echo "default\n";
-			default_command($cmd, $params, $sender, $private);
+			return default_command($cmd, $params, $sender, $private);
 			break;
 	}
+	return true;
 }
 
 /* module commands */
 function default_command($cmd, $params, $target = '', $private) {
-	global $modules;
+	global $modules, $commands;
 	echo "default_command($cmd, $params, $target, $private)\n";
+	foreach($commands as $command=>$func) {
+		if ($cmd == $command) {
+			echo "cmd == command\n";
+			call_user_func($func, $params, $target, $private);
+			return true;
+		}
+	}
 	foreach($modules as $loaded) {
 		if ($cmd == $loaded) {	
 			echo "cmd == loaded\n";
 			call_user_func($loaded.'_command', $params, $target, $private);
+			return true;
 		}
 	}
+	return false;
+}
+
+/* register command */
+function ircbot_register_command($command, $function) {
+	global $commands;
+	$commands[$command] = $function;
+}
+
+/* listener registration public */
+function ircbot_register_for_global_listening($function) {
+	global $msg_listener_global;
+	$msg_listener_global[] = $function;
+}
+
+/* listener registration private */
+function ircbot_register_for_private_listening($function) {
+	global $msg_listener_private;
+	$msg_listener_private[] = $function;
 }
 
 /* send message to irc host */
