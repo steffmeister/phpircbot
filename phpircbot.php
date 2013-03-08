@@ -11,6 +11,14 @@ define('CONNECTION_LOST', '2');
 /* convert admin users to array */
 $admin_users = explode(',', IRC_ADMIN_USERS);
 
+/* registered commands */
+$commands = array();
+
+/* listener */
+$msg_listener_global = array();
+$msg_listener_private = array();
+
+
 /* global modules array, contains loaded modules */
 $modules = array();
 
@@ -22,13 +30,6 @@ if (count($autoload_modules) > 0) {
 	}
 }
 
-/* registered commands */
-$commands = array();
-
-/* listener */
-$msg_listener_global = array();
-$msg_listener_private = array();
-
 $irc_res = false;
 
 $connection_failure = 0;
@@ -38,6 +39,7 @@ while(!$main_quit) {
 	/* main loop, interpret data sent from irc host */
 
 	$nick = IRC_NICK;
+	$channels = explode(',', IRC_CHANNEL);
 	
 	$irc_res = irc_host_connect();
 	
@@ -96,6 +98,9 @@ while(!$main_quit) {
 			/* ping - pong, kind of keepalive stuff */
 			} else if (substr($line, 0, 4) == 'PING') {
 				irc_send(str_replace('PING', 'PONG', $line));
+				foreach($msg_listener_global as $function) {
+					call_user_func($function, IRC_CHANNEL, 'PING');
+				}
 			/* message interpretation */
 			} else if (strpos($line, ' PRIVMSG '.$nick.' ') !== false) {
 				echo "Received private message...\n";
@@ -109,7 +114,7 @@ while(!$main_quit) {
 					}
 				}
 			/* general messages */
-			} else if (strpos($line, ' PRIVMSG '.IRC_CHANNEL.' ') !== false) {
+			} else if (strpos($line, ' PRIVMSG ') !== false) {
 				echo "Received message...\n";
 				$sender = substr($line, 1, strpos($line, '!')-1);
 				echo "From: ".$sender."\n";
@@ -261,6 +266,9 @@ function interpret_irc_message($sender, $msg, $private=0) {
 	return true;
 }
 
+function ircbot_global_handler($cmd, $params, $target = '', $private) {
+}
+
 /* module commands */
 function default_command($cmd, $params, $target = '', $private) {
 	global $modules, $commands;
@@ -285,7 +293,9 @@ function default_command($cmd, $params, $target = '', $private) {
 /* register command */
 function ircbot_register_command($command, $function) {
 	global $commands;
+	echo "ircbot_register_command($command, $function)\n";
 	$commands[$command] = $function;
+	//print_r($commands);
 }
 
 /* listener registration public */

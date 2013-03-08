@@ -10,10 +10,10 @@ define('IRC_NICK', 'bot_james');
 define('IRC_HOST_RECONNECT', 5);
 
 /* admin users (comma-separated) */
-define('IRC_ADMIN_USERS', 'steffmeister');
+define('IRC_ADMIN_USERS', 'steffmeister,steff_');
 
 /* auto load modules (comma-separated) */
-define('AUTOLOAD_MODULES', 'klo,magicball,numbergame');
+define('AUTOLOAD_MODULES', 'klo,magicball,numbergame,linky');
 
 
 ?>
