@@ -5,7 +5,7 @@
 $current_game = array();
 
 function numbergame_init() {
-	echo "numbergame_init module\n";
+	echo "\nnumbergame_init module\n";
 	ircbot_register_command('ng', 'ng_custom');
 	ircbot_register_for_global_listening('ng_listener_global');
 }
