@@ -55,7 +55,7 @@ while(!$main_quit) {
 		$nicked = 0;
 		$joined = 0;
 		$timeouts = 0;
-		while(!$quit) {			
+		while($quit == 0) {
 			$line = trim(fgets($irc_res));
 			
 			$meta_data = stream_get_meta_data($irc_res);
@@ -63,9 +63,10 @@ while(!$main_quit) {
 			if ($meta_data['timed_out']) {
 				echo "TIMEOUT\n";
 				$timeouts++;
-				echo "Timeouts: $timeouts\n";				
+				echo "Timeouts: $timeouts\n";
 			} else {
 				$timeouts = 0;
+				echo "Timeouts: $timeouts\n";
 			}
 			
 			if ( $meta_data['eof']){
@@ -75,8 +76,8 @@ while(!$main_quit) {
 
 			echo 'IRC: '.$line."\n";
 			
-			/* after 10 timeouts we reconnect */
-			if ($timeouts > 10) $quit = 1;
+			/* after 6 timeouts we reconnect */
+			if ($timeouts > 6) $quit = CONNECTION_LOST;
 	
 			/* send our nick */
 			if ((preg_match ( "/(NOTICE AUTH).*(hostname)/i" , $line) == 1) && (!$nicked)) {
@@ -160,7 +161,7 @@ while(!$main_quit) {
 			break;
 		}
 		/* quit message */
-		irc_send(':'.IRC_NICK.' QUIT :gotta go, fight club');
+		if ($quit == USER_SHUTDOWN)	irc_send(':'.IRC_NICK.' QUIT :gotta go, fight club');
 
 		/* close connection */
 		fclose($irc_res);
