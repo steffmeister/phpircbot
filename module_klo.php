@@ -2,11 +2,7 @@
 
 /* module_klo, a klo geh vs meetings counter */
 
-$klo_counter = 0;
-$mtg_counter = 0;
-
-$counter = array('k'=>0,'m'=>0);
-
+$counter;
 function klo_init() {
 	echo "\ninit klo_module";
 	klo_reset_counter();
@@ -15,60 +11,78 @@ function klo_init() {
 
 function klo_command( $string, $target='', $private=0 ) {
 
-	echo "klo_command($string)\n";
+	echo "klo_command($string)\n";	
+	$input = explode(' ', $string);	
+	$string=$input[0];
 	switch ( $string ) {
 		case 'reset':
 			klo_reset_counter();
 			irc_send_message( "Zähler zurückgesetzt.", $target, $private );
 			break;
 		case 'show':
-			klo_print_stats( $target, $private );
+			$user = isset($input[1]) ? $input[1] : 'all' ;
+			klo_print_stats($user, $target, $private );
 			break;
 		case 'k++':
 		case 'klo+1':
 			klo_increase_counter( 'k' );
-			klo_print_stats( $target, $private );
+			klo_print_stats( 'all' , $target, $private );
 			break;
 		case 'm++':
 		case 'mtg+1':
 			klo_increase_counter( 'm' );
-			klo_print_stats( $target, $private );
+			klo_print_stats( 'all', $target, $private );
 			break;
 		case 'help':
 		case 'man':
 		default:
-			klo_print_help($target, $private);
+			klo_print_help( $target, $private );
 	}
 }
 
-function klo_listener_global( $sender, $msg ) {	
-	if (preg_match('/[kK]lo/', $msg)) {
-		klo_increase_counter('k');
+function klo_listener_global( $sender, $msg ) {
+	if ( preg_match( '/[kK]lo/', $msg ) ) {
+		klo_increase_counter( 'k', $sender );
 	}
-	if (preg_match('/[mM]eeting/', $msg)) {
-		klo_increase_counter('m');	
+	if ( preg_match( '/[mM]eeting/', $msg ) ) {
+		klo_increase_counter( 'm', $sender );
 	}
 }
 
 function klo_reset_counter() {
 	echo "\nreset all counters";
-	if(!empty($GLOBALS['counter'])){
-		foreach ( $GLOBALS['counter'] as $k=>$v ) {
-			$GLOBALS['counter'][$k] = 0;
-		}	
-	}	
+	if ( !empty( $GLOBALS['counter'] ) ) {
+		
+		foreach ( $GLOBALS['counter'] as $key => $value ) {
+			foreach ( $value as $k => $v ) {
+				$GLOBALS['counter'][$key][$k] = 0;
+			}
+		}
+	}
 }
 
-function klo_increase_counter( $what ) {
-	$GLOBALS['counter'][$what]++;
+function klo_increase_counter( $what , $who ) {
+	$GLOBALS['counter'][$what][$who]++;
 }
 
-function klo_print_stats( $target='', $private=0 ) {
-	irc_send_message( "Klo ".$GLOBALS['counter']['k']." : ".$GLOBALS['counter']['m']." Meetings", $target, $private );
-
+function klo_print_stats( $user='all', $target='', $private=0 ) {
+	irc_send_message( "Stats for $user:", $target, $private );
+	
+	if ( $user==='all' ) {
+		$all_counts=array();
+		// count all klos and meetings
+		foreach ( $GLOBALS['counter'] as $key => $value ) {
+			foreach ( $value as $k => $v ) {
+				$all_counts[$key]+=$v;
+			}
+		}		
+		irc_send_message( "Klo ".$all_counts['k']." : ".$all_counts['m']." Meetings", $target, $private );
+	}else {
+		irc_send_message( "Klo ".$GLOBALS['counter']['k'][$user]." : ".$GLOBALS['counter']['m'][$user]." Meetings", $target, $private );
+	}
 }
 
-function klo_print_help( $target='', $private=0) {
+function klo_print_help( $target='', $private=0 ) {
 	$usage = array(
 		"#Commands:",
 		"reset 	- reset the counters",
