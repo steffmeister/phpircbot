@@ -5,6 +5,7 @@
 $answers = array();
 
 function magicball_init() {
+	echo "\nmagicball_init module\n";
 	/* answers were shamelessly copied from wikipedia */
 	global $answers;
 	$answers[] = 'It is certain';

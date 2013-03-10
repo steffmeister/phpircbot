@@ -13,7 +13,7 @@ $imgur_history = array();
 $ping_counter = 0;
 
 function linky_init() {
-	echo "linky_init module\n";
+	echo "\nlinky_init module\n";
 	ircbot_register_for_global_listening('linky_listener_global');
 }
 
