@@ -40,6 +40,9 @@ function klo_command( $string, $target='', $private=0 ) {
 	}
 }
 
+/*
+	interpret messages from chat and count klos or meetings
+*/
 function klo_listener_global( $sender, $msg ) {
 	if ( preg_match( '/[kK]lo/', $msg ) ) {
 		klo_increase_counter( 'k', $sender );
@@ -49,6 +52,9 @@ function klo_listener_global( $sender, $msg ) {
 	}
 }
 
+/*
+	reset all individual counters
+*/
 function klo_reset_counter() {
 	echo "\nreset all counters";
 	if ( !empty( $GLOBALS['counter'] ) ) {
@@ -61,10 +67,16 @@ function klo_reset_counter() {
 	}
 }
 
+/*
+	increase individual counter
+*/
 function klo_increase_counter( $what , $who ) {
 	$GLOBALS['counter'][$what][$who]++;
 }
 
+/*
+	print stats for all or for specific user
+*/
 function klo_print_stats( $user='all', $target='', $private=0 ) {
 	irc_send_message( "Stats for $user:", $target, $private );
 	
@@ -81,6 +93,10 @@ function klo_print_stats( $user='all', $target='', $private=0 ) {
 		irc_send_message( "Klo ".$GLOBALS['counter']['k'][$user]." : ".$GLOBALS['counter']['m'][$user]." Meetings", $target, $private );
 	}
 }
+
+/*
+	print available commands
+*/
 
 function klo_print_help( $target='', $private=0 ) {
 	$usage = array(
