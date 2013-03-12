@@ -42,7 +42,7 @@ function ng_custom($string, $target='', $private=0) {
 
 function ng_listener_global($sender, $msg) {
 	global $current_game;
-	if ($current_game) {
+	if ($current_game['running']) {
 		if (is_numeric($msg)) {
 			if ($msg == $current_game['number']) {
 				$current_game['running'] = 0;
