@@ -21,7 +21,6 @@ $commands = array();
 $msg_listener_global = array();
 $msg_listener_private = array();
 
-
 /* global modules array, contains loaded modules */
 $modules = array();
 
@@ -33,8 +32,13 @@ if (count($autoload_modules) > 0) {
 	}
 }
 
+/* irc channel users */
+$users = array();
+
+/* irc resource handle */
 $irc_res = false;
 
+/* counter for connection failures */
 $connection_failure = 0;
 
 $main_quit = 0;
@@ -146,6 +150,19 @@ while(!$main_quit) {
 				sleep(10);
 				echo "rejoining\n";
 				irc_join_channel(IRC_CHANNEL); // rejoin
+			/* interprete names list */
+			} else if (strpos($line, ' 353 '.$nick) !== false) {
+				$names = substr($line, strrpos($line, ':')+1);
+				$users_temp = explode(' ', $names);
+				$users = array();
+				foreach($users_temp as $user) {
+					if (substr($user, 0, 1) == '@') $user = substr($user, 1);
+					if ($user != $nick) {
+						$users[] = $user;
+					}
+				}
+				echo "the users are...\n";
+				print_r($users);
 			}
 			
 			//if (feof($irc_res)) $quit = CONNECTION_LOST;			
@@ -318,6 +335,12 @@ function ircbot_register_for_private_listening($function) {
 function irc_send($string) {
 	global $irc_res;
 	fwrite($irc_res, $string."\n");
+}
+
+/* get array of channel users */
+function ircbot_get_channel_users() {
+	global $users;
+	return $users;
 }
 
 /* send (chat) message to irc */
