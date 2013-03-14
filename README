@@ -1,3 +1,35 @@
 phpircbot
+===========
 
 A simple IRC bot written in PHP.
+
+Features
+---------
+ - Automatically connect to a IRC host and join a channel
+ - Automatically rejoin the channel after a kick
+ - Automatically reconnect to the host after disconnect
+ - Listen to commands
+ - Modules support which extend the functionality of the bot
+ 
+
+Configuration
+--------------
+Please take a look at the phpircbot.conf.php-dist, adapt it to your needs and rename it to phpircbot.conf.php.
+
+Following settings can be adjusted,
+
+IRC_HOST	- IRC Host
+IRC_PORT	- IRC Port, eg 6667
+IRC_CHANNEL	- Channel to be joined, eg #help
+IRC_NICK	- Nick of the bot
+IRC_HOST_RECONNECT	- How many retries to connect to the host before the bot should shut down
+IRC_ADMIN_USERS		- Nicks of the "admin" users, these users can eg shutdown the bot
+AUTOLOAD_MODULES	- which modules should be loaded at startup
+
+
+Commands
+---------
+version		- shows the version of the bot
+shutdown	- will shutdown the bot (for admin users)
+modules		- shows a list of loaded modules
+commands	- shows a list of registered commands

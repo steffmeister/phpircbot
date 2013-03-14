@@ -1,5 +1,8 @@
 <?php
 
+/* check if config file exists */
+if (!file_exists('phpircbot.conf.php')) die("No config found, please read the README!\n");
+
 /* load phpircbot.conf.php */
 require('phpircbot.conf.php');
 

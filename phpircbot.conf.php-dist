@@ -1,0 +1,20 @@
+<?php
+
+/* sample config file, please adapt to your needs and rename it to phpircbot.conf.php */
+
+/* general settings */
+define('IRC_HOST', 'irc.quakenet.org');
+define('IRC_PORT', '6667');
+define('IRC_CHANNEL', '#help');
+define('IRC_NICK', 'botty_mc_bot');
+
+/* how many tries to connect */
+define('IRC_HOST_RECONNECT', 5);
+
+/* admin users (comma-separated) */
+define('IRC_ADMIN_USERS', 'admin');
+
+/* auto load modules (comma-separated) */
+define('AUTOLOAD_MODULES', 'magicball,numbergame');
+
+?>
