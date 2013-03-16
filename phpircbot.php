@@ -163,6 +163,22 @@ while(!$main_quit) {
 				}
 				echo "the users are...\n";
 				print_r($users);
+			/* interpret quit message */
+			} else if (strpos($line, ' QUIT ') !== false) {
+				echo "Received quit...\n";
+				$sender = substr($line, 1, strpos($line, '!')-1);
+				echo "From: ".$sender."\n";
+				unset($users[$sender]);
+				echo "the users are...\n";
+				print_r($users);
+			/* interpret quit message */
+			} else if (strpos($line, ' JOIN ') !== false) {
+				echo "Received join...\n";
+				$sender = substr($line, 1, strpos($line, '!')-1);
+				echo "From: ".$sender."\n";
+				$users[] = $sender;
+				echo "the users are...\n";
+				print_r($users);
 			}
 			
 			//if (feof($irc_res)) $quit = CONNECTION_LOST;			
