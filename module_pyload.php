@@ -11,19 +11,19 @@ define('MODULE_ADMINS', 'steffmeister');
 /* temporary file - no need to change */
 define('TEMP_FILE', 'ircpyload.tmp');
 
-$module_admins = explode(',', MODULE_ADMINS);
-
-print_r($module_admins);
+$module_admins = array();
 
 $config_status = true;
 
 function pyload_init() {
-	global $config_status;
+	global $module_admins, $config_status;
 	echo "\npyload_init module\n";
+	$config_status = true;
 	if (!file_exists(PYLOAD_PATH.'pyLoadCli.py')) {
 		echo "pyLoadCli.py not found!!\n";
 		$config_status = false;
 	}
+	$module_admins = explode(',', MODULE_ADMINS);
 }
 
 function pyload_command($string, $target='', $private=0) {
