@@ -32,7 +32,11 @@ function linky_command($string, $target='', $private=0) {
 			break;
 		case 'imgur':
 			$link = imgur_get_random_link();
-			irc_send_message($link, $target, $private);
+			if ($link != false) {
+				irc_send_message($link, $target, $private);
+			} else {
+				irc_send_message("Sorry, keinen gültigen Link erhalten :(", $target, $private);
+			}
 			break;
 			
 	}
@@ -58,19 +62,22 @@ function imgur_get_random_link() {
 	$link_end = strpos($result, "\n", $link_begin);
 	$link = trim(substr($result, $link_begin, $link_end-$link_begin));
 	echo "$link_begin - $link_end, string: '".$link."'\n";
-	$imgur_history[] = $link;
-	return $link;
+	if (substr($link, 0, 4) == 'http') {
+		$imgur_history[] = $link;
+		return $link;
+	}
+	return false;
 }
 
 
 function linky_listener_global($sender, $msg) {
-	global $link_stats, $ping_counter;
+	global $link_stats, $ping_counter, $imgur_history;
 	if ($msg == 'PING') {
 		$ping_counter++;
 		echo "Received ping...$ping_counter\n";
 		if ($ping_counter > 10) {
 			$link = imgur_get_random_link();
-			irc_send_message('Random IMGUR anyone? '.$link, IRC_CHANNEL, 0);
+			if ($link != false) irc_send_message('Random IMGUR anyone? '.$link, IRC_CHANNEL, 0);
 			$ping_counter = 0;
 		}
 	} else {
@@ -87,6 +94,14 @@ function linky_listener_global($sender, $msg) {
 			echo "host of this is: ".$url['host']."\n";
 			if (!isset($link_stats[$url['host']])) {
 				$link_stats[$url['host']] = 0;
+			}
+			if ($url['host'] == 'imgur.com') {
+				$imgur_history[] = $full_link;
+				foreach($imgur_history as $url) {
+					if ($url == $full_link) {
+						irc_send_message('Den Link hatten wir schon.', IRC_CHANNEL, 0);
+					}
+				}
 			}
 			$link_stats[$url['host']]++;
 		}

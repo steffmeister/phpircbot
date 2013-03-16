@@ -278,10 +278,18 @@ function interpret_irc_message($sender, $msg, $private=0) {
 		case 'version':
 			irc_send_message('v'.IRCBOT_VERSION, $sender, $private);
 			break;
+		/* help */
+		case 'help':
+			irc_send_message('Es gibt keine Hilfe!', $sender, $private);
+			break;
 		/* else (module commands) */
 		default:
 			echo "default\n";
-			return default_command($cmd, $params, $sender, $private);
+			if (default_command($cmd, $params, $sender, $private)) {
+				return true;
+			} else {
+				irc_send_message('Me no understandy!', $sender, $private);
+			}
 			break;
 	}
 	return true;
@@ -350,7 +358,11 @@ function irc_send_message($string, $target='', $private=1) {
 	if (($target == '') || (!$private)) $target = IRC_CHANNEL;
 	if ($private && ($target == '')) $target = IRC_CHANNEL;
 	$send = ':'.$nick.' PRIVMSG '.$target.' :'.$string."\n";
-	fwrite($irc_res, $send);
+	if ($string != '') {
+		fwrite($irc_res, $send);
+		return true;
+	}
+	return false;
 }
 
 /* load a module */
