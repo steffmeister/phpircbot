@@ -5,7 +5,7 @@
 $current_game = array();
 
 function numbergame_init() {
-	echo "\nnumbergame_init module\n";
+	irc_bot_echo("numbergame_init module");
 	ircbot_register_command('ng', 'ng_custom');
 	ircbot_register_for_global_listening('ng_listener_global');
 }
@@ -22,7 +22,7 @@ function ng_custom($string, $target='', $private=0) {
 			$current_game['number'] = rand(1, 10);
 			//irc_send_message('nummer:'. $current_game['number'], $target, 0);
 			irc_send_message('Los gehts! Erratet die Nummer, 1-10!'.$score, $sender, 0);
-			echo "Nummer ist ".$current_game['number']."\n";
+			irc_bot_echo("Nummer ist ".$current_game['number']);
 			break;
 		case 'stop':
 			$current_game['running'] = 0;
@@ -51,7 +51,7 @@ function ng_listener_global($sender, $msg) {
 				}
 				$current_game['scores'][$sender]++;
 				irc_send_message($sender.' hat die richtige Nummer erraten: '.$current_game['number'].'!', $sender, 0);
-				echo "Nummer erraten\n";
+				irc_bot_echo("Nummer erraten");
 			}
 		}
 	}

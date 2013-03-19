@@ -3,14 +3,13 @@
 /* module_klo, a klo geh vs meetings counter */
 
 function klo_init() {
-	echo "\ninit klo_module";
+	irc_bot_echo("init klo_module");
 	klo_reset_counter();
 	ircbot_register_for_global_listening( 'klo_listener_global' );
 }
 
 function klo_command( $string, $target='', $private=0 ) {
-
-	echo "klo_command($string)\n";
+	irc_bot_echo("klo_command($string)");
 	$user='';
 	$input = explode(' ', $string);	
 	$string=$input[0];
@@ -57,7 +56,7 @@ function klo_listener_global( $sender, $msg ) {
 	reset all individual counters
 */
 function klo_reset_counter($user='all') {
-	echo "\nreset all counters";
+	irc_bot_echo("reset all counters");
 	
 	if ($user === 'all') {
 		foreach ( $GLOBALS['counter'] as $key => $value ) {
@@ -65,11 +64,9 @@ function klo_reset_counter($user='all') {
 				$GLOBALS['counter'][$key][$k] = 0;
 			}
 		}
-	}else{
+	} else {
 		foreach ( $GLOBALS['counter'] as $key => $value ) {
-			
 			$GLOBALS['counter'][$key][$user] = 0;
-			
 		}
 	}		
 }

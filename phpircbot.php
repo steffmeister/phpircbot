@@ -11,6 +11,9 @@ define('IRCBOT_VERSION', '0.1');
 define('USER_SHUTDOWN', '1');
 define('CONNECTION_LOST', '2');
 
+/* quiet mode, disable output */
+$quiet_mode = false;
+
 /* convert admin users to array */
 $admin_users = explode(',', IRC_ADMIN_USERS);
 
@@ -51,12 +54,12 @@ while(!$main_quit) {
 	$irc_res = irc_host_connect();
 	
 	if ($irc_res == false) {
-		echo "Connection failure...\n";
+		irc_bot_echo("Connection failure...");
 		$connection_failure++;
 		if ($connection_failure > IRC_HOST_RECONNECT) $main_quit = 1;
 		sleep(60);
 	} else {
-		echo "Connection established...\n";
+		irc_bot_echo("Connection established...");
 		$connection_failure = 0;
 		$quit = 0;
 		$nicked = 0;
@@ -68,36 +71,36 @@ while(!$main_quit) {
 			$meta_data = stream_get_meta_data($irc_res);
 
 			if ($meta_data['timed_out']) {
-				echo "TIMEOUT\n";
+				irc_bot_echo("TIMEOUT");
 				$timeouts++;
-				echo "Timeouts: $timeouts\n";
+				irc_bot_echo("Timeouts: $timeouts");
 			} else {
 				$timeouts = 0;
-				echo "Timeouts: $timeouts\n";
+				irc_bot_echo("Timeouts: $timeouts");
 			}
 			
 			if ( $meta_data['eof']){
-				echo "EOF\n";
+				irc_bot_echo("EOF");
 				$quit = 1;
 			}
 
-			echo 'IRC: '.$line."\n";
+			irc_bot_echo('IRC: '.$line);
 			
 			/* after 6 timeouts we reconnect */
 			if ($timeouts > 6) $quit = CONNECTION_LOST;
 	
 			/* send our nick */
 			if ((preg_match ( "/(NOTICE AUTH).*(hostname)/i" , $line) == 1) && (!$nicked)) {
-				echo 'Sending nick...';
+				irc_bot_echo('Sending nick...', 0);
 				irc_send('USER '.$nick.' 0 * :phpircbot '.IRCBOT_VERSION);
 				irc_send('NICK '.$nick);
 				
-				echo "ok\n";
+				irc_bot_echo("ok");
 				$nicked = 1;
 			/* nick already in use */
 			} else if (($nicked) && (strpos($line, ' 433 ') !== false)) {
-				echo "Nick already in use :(\n";
-				echo "what now?!?!\n";
+				irc_bot_echo("Nick already in use :(");
+				irc_bot_echo("what now?!?!");
 				$nick = $nick.'_';
 				irc_send('NICK '.$nick);
 			/* at the end of motd message, join the channel */
@@ -111,11 +114,11 @@ while(!$main_quit) {
 				}
 			/* message interpretation */
 			} else if (strpos($line, ' PRIVMSG '.$nick.' ') !== false) {
-				echo "Received private message...\n";
+				irc_bot_echo("Received private message...");
 				$sender = substr($line, 1, strpos($line, '!')-1);
-				echo "From: ".$sender."\n";
+				irc_bot_echo("From: ".$sender);
 				$msg = substr($line, strpos($line, ':', 2)+1);
-				echo "Message: ".$msg."\n";		
+				irc_bot_echo("Message: ".$msg);
 				if (interpret_irc_message($sender, $msg, 1) == false) {
 					foreach($msg_listener_private as $function) {
 						call_user_func($function, $sender, $msg);
@@ -123,15 +126,15 @@ while(!$main_quit) {
 				}
 			/* general messages */
 			} else if (strpos($line, ' PRIVMSG ') !== false) {
-				echo "Received message...\n";
+				irc_bot_echo("Received message...");
 				$sender = substr($line, 1, strpos($line, '!')-1);
-				echo "From: ".$sender."\n";
+				irc_bot_echo("From: ".$sender);
 				$msg = substr($line, strpos($line, ':', 2)+1);
-				echo "Message: ".$msg."\n";
-				echo "My nick is: ".$nick."\n";
+				irc_bot_echo("Message: ".$msg);
+				irc_bot_echo("My nick is: ".$nick);
 				$result = false;
 				if (strpos($msg, $nick) !== false) {
-					echo "I was mentioned\n";
+					irc_bot_echo("I was mentioned");
 					if (substr($msg, 0, strlen($nick)) == $nick) {
 						$msg = substr($msg, strpos($msg, ' ') + 1);
 						$result = interpret_irc_message($sender, $msg, 0);
@@ -145,10 +148,10 @@ while(!$main_quit) {
 			/* kick message */
 			} else if (strpos($line, ' KICK '.IRC_CHANNEL.' '.$nick) !== false) {
 				// we were kicked :(
-				echo "were kicked\n";
+				irc_bot_echo("were kicked");
 				$joined = 0;
 				sleep(10);
-				echo "rejoining\n";
+				irc_bot_echo("rejoining");
 				irc_join_channel(IRC_CHANNEL); // rejoin
 			/* interprete names list */
 			} else if (strpos($line, ' 353 '.$nick) !== false) {
@@ -161,23 +164,27 @@ while(!$main_quit) {
 						$users[] = $user;
 					}
 				}
-				echo "the users are...\n";
+				irc_bot_echo("the users are...");
 				print_r($users);
 			/* interpret quit message */
 			} else if (strpos($line, ' QUIT ') !== false) {
-				echo "Received quit...\n";
+				irc_bot_echo("Received quit...");
 				$sender = substr($line, 1, strpos($line, '!')-1);
-				echo "From: ".$sender."\n";
-				unset($users[$sender]);
-				echo "the users are...\n";
+				irc_bot_echo("From: ".$sender);
+				$usercounter = 0;
+				foreach($users as $user) {
+					if ($user == $sender) unset($users[$usercounter]);
+					$usercounter++;
+				}
+				irc_bot_echo("the users are...");
 				print_r($users);
 			/* interpret quit message */
 			} else if (strpos($line, ' JOIN ') !== false) {
-				echo "Received join...\n";
+				irc_bot_echo("Received join...");
 				$sender = substr($line, 1, strpos($line, '!')-1);
-				echo "From: ".$sender."\n";
+				irc_bot_echo("From: ".$sender);
 				$users[] = $sender;
-				echo "the users are...\n";
+				irc_bot_echo("the users are...");
 				print_r($users);
 			}
 			
@@ -192,8 +199,8 @@ while(!$main_quit) {
 			case CONNECTION_LOST:
 			default:
 				sleep(60);
-				echo "\nQUIT:$quit";
-				echo "\nwhat next?\n";
+				irc_bot_echo("QUIT:$quit");
+				irc_bot_echo("what next?");
 			break;
 		}
 		/* quit message */
@@ -209,15 +216,15 @@ while(!$main_quit) {
 function irc_host_connect() {
 	//global $res;
 	/* connect to irc host */
-	echo 'Connecting...';
+	irc_bot_echo('Connecting...', 0);
 	$res = fsockopen(IRC_HOST, IRC_PORT);
 	
 	if ($res == false) {
-		echo "error\n";
+		irc_bot_echo("error");
 		//die();
 		return false;
 	}
-	echo "ok\n";
+	irc_bot_echo("ok");
 	return $res;
 }
 
@@ -225,9 +232,9 @@ function irc_host_connect() {
 function irc_join_channel($channel) {
 	global $joined;
 	global $nick;
-	echo 'Joining channel...';
+	irc_bot_echo('Joining channel...', 0);
 	irc_send(':'.$nick.' JOIN '.$channel);
-	echo "ok\n";
+	irc_bot_echo("ok");
 	$joined = 1;
 }
 
@@ -236,7 +243,7 @@ function interpret_irc_message($sender, $msg, $private=0) {
 	global $quit;
 	global $nick;
 	global $commands;
-	global $modules;
+	global $modules, $quiet_mode;
 	$cmd = $msg;
 	$params = '';
 	if (strpos($msg, ' ') !== false) {
@@ -244,8 +251,8 @@ function interpret_irc_message($sender, $msg, $private=0) {
 		$params = substr($msg, strpos($msg, ' ')+1);
 	}
 	
-	echo 'cmd: \''.$cmd."'\n";
-	echo 'params: \''.$params."'\n";
+	irc_bot_echo('cmd: \''.$cmd."'");
+	irc_bot_echo('params: \''.$params."'");
 	
 	switch($cmd) {
 		/* show loaded modules */
@@ -281,7 +288,7 @@ function interpret_irc_message($sender, $msg, $private=0) {
 		/* rename bot */
 		case 'nick':
 			if (is_admin($sender)) {
-				echo 'new nick: '.$params."\n";
+				irc_bot_echo('new nick: '.$params);
 				$nick = $params;
 				irc_send('NICK '.$nick);
 			}
@@ -289,6 +296,17 @@ function interpret_irc_message($sender, $msg, $private=0) {
 		/* load module */
 		case 'load':
 			if (is_admin($sender)) load_module($params, $sender, '', $private);
+			break;
+		/* switch quiet mode */
+		case 'quietmode':
+			if (is_admin($sender)) {
+				if ($quiet_mode) {
+					$quiet_mode = 0;
+				} else {
+					$quiet_mode = 1;
+				}
+				irc_send_message('quiet_mode is now: '.$quiet_mode, $sender, $private);
+			}
 			break;
 		/* show version */
 		case 'version':
@@ -300,7 +318,7 @@ function interpret_irc_message($sender, $msg, $private=0) {
 			break;
 		/* else (module commands) */
 		default:
-			echo "default\n";
+			irc_bot_echo("default");
 			if (default_command($cmd, $params, $sender, $private)) {
 				return true;
 			} else {
@@ -317,17 +335,17 @@ function ircbot_global_handler($cmd, $params, $target = '', $private) {
 /* module commands */
 function default_command($cmd, $params, $target = '', $private) {
 	global $modules, $commands;
-	echo "default_command($cmd, $params, $target, $private)\n";
+	irc_bot_echo("default_command($cmd, $params, $target, $private)");
 	foreach($commands as $command=>$func) {
 		if ($cmd == $command) {
-			echo "cmd == command\n";
+			irc_bot_echo("cmd == command");
 			call_user_func($func, $params, $target, $private);
 			return true;
 		}
 	}
 	foreach($modules as $loaded) {
 		if ($cmd == $loaded) {	
-			echo "cmd == loaded\n";
+			irc_bot_echo("cmd == loaded");
 			call_user_func($loaded.'_command', $params, $target, $private);
 			return true;
 		}
@@ -338,7 +356,7 @@ function default_command($cmd, $params, $target = '', $private) {
 /* register command */
 function ircbot_register_command($command, $function) {
 	global $commands;
-	echo "ircbot_register_command($command, $function)\n";
+	irc_bot_echo("ircbot_register_command($command, $function)");
 	$commands[$command] = $function;
 	//print_r($commands);
 }
@@ -408,9 +426,17 @@ function is_admin($user) {
 	foreach($admin_users as $admin) {
 		if ($admin == $user) return true;
 	}
-	echo "user is not admin...\n";
+	irc_bot_echo("user is not admin...");
 	return false;
 }
 
+/* echo messages */
+function irc_bot_echo($message, $newline=1) {
+	global $quiet_mode;
+	if (!$quiet_mode) {
+		echo $message;
+		if ($newline) echo "\n";
+	}
+}
 
 ?>

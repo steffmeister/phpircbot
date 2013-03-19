@@ -5,7 +5,7 @@
 $answers = array();
 
 function magicball_init() {
-	echo "\nmagicball_init module\n";
+	irc_bot_echo("magicball_init module");
 	/* answers were shamelessly copied from wikipedia */
 	global $answers;
 	$answers[] = 'It is certain';
@@ -33,10 +33,7 @@ function magicball_init() {
 
 function magicball_command($string, $target='', $private) {
 	global $answers;
-	echo "m8b: counter".count($answers)."\n";
 	$send_answer = rand(0, count($answers)-1);
-	echo "m8b: $send_answer\n";
-	echo "m8b: $answers[$send_answer]\n";
 	irc_send_message($answers[$send_answer].'.', $target, $private);
 }
 
