@@ -112,14 +112,14 @@ function linky_listener_global($sender, $msg) {
 			if (!isset($link_stats[$url['host']])) {
 				$link_stats[$url['host']] = 0;
 			}
-			if ($url['host'] == 'imgur.com') {
-				$imgur_history[] = $full_link;
+			if ($url['host'] == 'imgur.com') {				
 				foreach($imgur_history as $url) {
 					if ($url == $full_link) {
 						irc_send_message('Den Link hatten wir schon.', IRC_CHANNEL, 0);
 						break;
-					}
+					}					
 				}
+				$imgur_history[] = $full_link;
 			}
 			$link_stats[$url['host']]++;
 		}
