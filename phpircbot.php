@@ -10,6 +10,7 @@ require('phpircbot.conf.php');
 define('IRCBOT_VERSION', '0.1');
 define('USER_SHUTDOWN', '1');
 define('CONNECTION_LOST', '2');
+define('USER_RESTART', '3');
 
 /* quiet mode, disable output */
 $quiet_mode = false;
@@ -195,6 +196,7 @@ while(!$main_quit) {
 		switch($quit) {
 			/* if we were forced to shutdown */
 			case USER_SHUTDOWN: $main_quit = 1; break;
+case USER_RESTART: $main_quit = 3; break;
 			/* connection lost */
 			case CONNECTION_LOST:
 			default:
@@ -204,13 +206,15 @@ while(!$main_quit) {
 			break;
 		}
 		/* quit message */
-		if ($quit == USER_SHUTDOWN)	irc_send(':'.IRC_NICK.' QUIT :gotta go, fight club');
+		if (($quit == USER_SHUTDOWN) || ($quit == USER_RESTART))	irc_send(':'.IRC_NICK.' QUIT :gotta go, fight club');
 
 		/* close connection */
 		fclose($irc_res);
 	}
 	
 }
+
+exit($main_quit);
 
 /* connect to irc host */
 function irc_host_connect() {
@@ -285,6 +289,9 @@ function interpret_irc_message($sender, $msg, $private=0) {
 		case 'shutdown':
 			if (is_admin($sender)) $quit = USER_SHUTDOWN;
 			break;
+case 'restart':
+if (is_admin($sender)) $quit = USER_RESTART;
+break;
 		/* rename bot */
 		case 'nick':
 			if (is_admin($sender)) {
