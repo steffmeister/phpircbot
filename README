@@ -14,7 +14,8 @@ Features
 
 Configuration
 --------------
-Please take a look at the phpircbot.conf.php-dist, adapt it to your needs and rename it to phpircbot.conf.php.
+Please take a look at the phpircbot.conf.php-dist, adapt it to your needs and
+rename it to phpircbot.conf.php.
 
 Following settings can be adjusted,
 
@@ -22,8 +23,10 @@ IRC_HOST	- IRC Host
 IRC_PORT	- IRC Port, eg 6667
 IRC_CHANNEL	- Channel to be joined, eg #help
 IRC_NICK	- Nick of the bot
-IRC_HOST_RECONNECT	- How many retries to connect to the host before the bot should shut down
-IRC_ADMIN_USERS		- Nicks of the "admin" users, these users can eg shutdown the bot
+IRC_HOST_RECONNECT	- How many retries to connect to the host before the bot
+					  should shut down
+IRC_ADMIN_USERS		- Nicks of the "admin" users, these users can eg shutdown
+					  the bot
 AUTOLOAD_MODULES	- which modules should be loaded at startup
 
 
