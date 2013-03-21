@@ -30,6 +30,30 @@ AUTOLOAD_MODULES	- which modules should be loaded at startup
 Commands
 ---------
 version		- shows the version of the bot
-shutdown	- will shutdown the bot (for admin users)
+shutdown	- will shutdown the bot (*)
+restart		- will restart the bot (if started from the startbot.sh) (*)
 modules		- shows a list of loaded modules
 commands	- shows a list of registered commands
+nick		- rename the bot (*)
+load		- load a module (*)
+quietmode	- enables/disables quiet mode (console output) (*)
+
+(*) Admin-only commands
+
+
+Module development
+-------------------
+1) Create a file named module_<your desired module name>.php
+   You should make sure that your module name is very simple, eg just a
+   short word.
+2) Every module needs a <module_name>_init() function. Use it to initialize
+   variables or set up anything you need for later use.
+3) Add a <module_name>_command($string, $target='', $private=0) function. This
+   will be called if someone writes your module name to the bot. $string is
+   the text, $target is the person who sent it and $private tells you if it
+   was written privately or publicly.
+
+To load your module when the bot is running, write "load <your module name>" to
+it. If you want to autoload the module at startup add it to the
+AUTOLOAD_MODULES constant. Please note that in that case the modules are loaded
+before the bot has joined the channel and everything.

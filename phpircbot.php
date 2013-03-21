@@ -196,7 +196,7 @@ while(!$main_quit) {
 		switch($quit) {
 			/* if we were forced to shutdown */
 			case USER_SHUTDOWN: $main_quit = 1; break;
-case USER_RESTART: $main_quit = 3; break;
+			case USER_RESTART: $main_quit = 3; break;
 			/* connection lost */
 			case CONNECTION_LOST:
 			default:
@@ -289,9 +289,10 @@ function interpret_irc_message($sender, $msg, $private=0) {
 		case 'shutdown':
 			if (is_admin($sender)) $quit = USER_SHUTDOWN;
 			break;
-case 'restart':
-if (is_admin($sender)) $quit = USER_RESTART;
-break;
+		/* restart bot */
+		case 'restart':
+			if (is_admin($sender)) $quit = USER_RESTART;
+			break;
 		/* rename bot */
 		case 'nick':
 			if (is_admin($sender)) {
@@ -334,9 +335,6 @@ break;
 			break;
 	}
 	return true;
-}
-
-function ircbot_global_handler($cmd, $params, $target = '', $private) {
 }
 
 /* module commands */
