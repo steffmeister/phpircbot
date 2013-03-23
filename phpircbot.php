@@ -3,6 +3,9 @@
 /* check if config file exists */
 if (!file_exists('phpircbot.conf.php')) die("No config found, please read the README!\n");
 
+/* remember start time */
+$start_time = time();
+
 /* load phpircbot.conf.php */
 require('phpircbot.conf.php');
 
@@ -247,7 +250,7 @@ function interpret_irc_message($sender, $msg, $private=0) {
 	global $quit;
 	global $nick;
 	global $commands;
-	global $modules, $quiet_mode;
+	global $modules, $quiet_mode, $start_time;
 	$cmd = $msg;
 	$params = '';
 	if (strpos($msg, ' ') !== false) {
@@ -323,6 +326,10 @@ function interpret_irc_message($sender, $msg, $private=0) {
 		/* help */
 		case 'help':
 			irc_send_message('Es gibt keine Hilfe!', $sender, $private);
+			break;
+		/* uptime */
+		case 'uptime':
+			irc_send_message(date('H:i:s').' up   '.(time() - $start_time).'s');
 			break;
 		/* else (module commands) */
 		default:
