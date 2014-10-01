@@ -1,7 +1,10 @@
 <?php
 
 /* check if config file exists */
-if (!file_exists('phpircbot.conf.php')) die("No config found, please read the README!\n");
+if (!file_exists('phpircbot.conf.php')){
+	echo "No config found, please read the README!\n";
+	exit(4);
+}
 
 /* remember start time */
 $start_time = time();
@@ -14,6 +17,7 @@ define('IRCBOT_VERSION', '0.1');
 define('USER_SHUTDOWN', '1');
 define('CONNECTION_LOST', '2');
 define('USER_RESTART', '3');
+define('CONFIG_NOT_FOUND', '4');
 
 /* quiet mode, disable output */
 $quiet_mode = false;
